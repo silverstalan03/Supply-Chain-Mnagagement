@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Supply Chain Management System
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.9
+    MemorySize: 128
+    Environment:
+      Variables:
+        ORDERS_TABLE: Orders
+        INVENTORY_TABLE: Inventory
+        DOCUMENTS_BUCKET: !Sub ${AWS::StackName}-docs-${AWS::AccountId}
+  Api:
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,Accept,Content-Disposition'"
+      AllowOrigin: "'*'"
+      MaxAge: "'3600'"
+
+Resources:
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Orders
+      AttributeDefinitions:
+        - AttributeName: order_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: order_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  InventoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Inventory
+      AttributeDefinitions:
+        - AttributeName: product_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: product_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-docs-${AWS::AccountId}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ['*']
+            ExposedHeaders:
+              - ETag
+              - Content-Type
+              - Content-Length
+              - Content-Disposition
+            MaxAge: 3000
+
+  OrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/order-service/
+      Handler: app.lambda_handler
+      Role: arn:aws:iam::975050073542:role/LabRole
+      Events:
+        GetOrders:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: get
+        CreateOrder:
+          Type: Api
+          Properties:
+            Path: /orders
+            Method: post
+        UpdateOrder:
+          Type: Api
+          Properties:
+            Path: /orders/{orderId}
+            Method: put
+        DeleteOrder:
+          Type: Api
+          Properties:
+            Path: /orders/{orderId}
+            Method: delete
+        GetDocument:
+          Type: Api
+          Properties:
+            Path: /orders/{orderId}/document
+            Method: get
+        UpdateStatus:
+          Type: Api
+          Properties:
+            Path: /orders/{orderId}/status
+            Method: patch
+
+  InventoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/inventory/
+      Handler: app.lambda_handler
+      Role: arn:aws:iam::975050073542:role/LabRole
+      Events:
+        GetInventory:
+          Type: Api
+          Properties:
+            Path: /inventory
+            Method: get
+
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/health/
+      Handler: app.lambda_handler
+      Role: arn:aws:iam::975050073542:role/LabRole
+      Events:
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: get
+
+  AnalyticsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/analytics/
+      Handler: app.lambda_handler
+      Role: arn:aws:iam::975050073542:role/LabRole
+      Events:
+        GetAnalytics:
+          Type: Api
+          Properties:
+            Path: /analytics
+            Method: get
+
+Outputs:
+  ApiURL:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+  BucketName:
+    Description: S3 Bucket for order documents
+    Value: !Ref DocumentsBucket
