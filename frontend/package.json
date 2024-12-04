@@ -2,10 +2,11 @@
   "name": "supply-chain-management",
   "version": "1.0.0",
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts start --host 0.0.0.0",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "serve": "node server.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
@@ -15,7 +16,8 @@
     "recharts": "^2.13.3",
     "express": "^4.17.1",
     "compression": "^1.7.4",
-    "helmet": "^4.6.0"
+    "helmet": "^4.6.0",
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   },
   "devDependencies": {
     "react-scripts": "5.0.1"
